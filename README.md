@@ -7,12 +7,17 @@ Solo-founder MVP for Australian electricians and HVAC contractors in Perth. It r
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install fastapi uvicorn pydantic httpx reportlab python-multipart
+pip install --no-cache-dir -r requirements.txt
+# If your network blocks the default package index:
+pip install --index-url https://pypi.python.org/simple -r requirements.txt
 ```
 
 ## Ollama setup
 
 ```bash
+ollama pull llama3.1:8b
+# Optional higher-quality model if your GPU setup can load it quickly:
 ollama pull llama3.1:70b
 ollama serve
 ```
@@ -20,10 +25,10 @@ ollama serve
 For fastest live demos on an RTX 4090, start Ollama before the demo and run one warm-up request:
 
 ```bash
-curl http://localhost:11434/api/generate -d '{"model":"llama3.1:70b","prompt":"Return JSON {\"ok\":true}","stream":false,"format":"json"}'
+curl http://localhost:11434/api/generate -d '{"model":"llama3.1:8b","prompt":"Return JSON {\"ok\":true}","stream":false,"format":"json"}'
 ```
 
-If 70B is too slow for your quantization/VRAM setup, edit `OLLAMA_MODEL` in `llm_client.py` to a smaller local model you have pulled. The app still has a fast fallback parser for common demo jobs.
+The app defaults to `llama3.1:8b` for faster live demos. To use 70B, start the app with `OLLAMA_MODEL=llama3.1:70b uvicorn main:app --host 0.0.0.0 --port 8000`. The app still has a fast fallback parser for common demo jobs.
 
 ## Run locally
 
@@ -88,6 +93,16 @@ curl -X POST http://localhost:8000/transcribe -F audio=@sample.webm
 ```
 
 ## DEMO CHECKLIST
+
+| Check | How | Must pass |
+| --- | --- | --- |
+| Backend starts | `uvicorn main:app` | No errors |
+| Ollama responds | `curl` warm-up test | Returns text in <5s after warm-up |
+| Frontend loads | Open URL on phone | UI renders correctly |
+| Voice records | Tap record, speak 10s | Red circle shows, timer counts |
+| Quote generates | Tap done / Build Quote | Loading state then quote |
+| PDF opens | Tap Generate PDF | Browser opens PDF tab |
+| Demo mode works | Toggle demo | Pre-canned quote loads instantly |
 
 ### Pre-demo steps
 
