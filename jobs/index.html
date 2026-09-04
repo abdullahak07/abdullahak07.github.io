@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Academic Job Tracker</title>
+  <meta name="description" content="Simple dashboard for Australian academic job opportunities and applications." />
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #697386;
+      --line: #e6eaf0;
+      --accent: #2457d6;
+      --accent-soft: #edf3ff;
+      --green: #16794b;
+      --green-soft: #eaf7f0;
+      --amber: #9a6700;
+      --amber-soft: #fff7df;
+      --red: #b42318;
+      --red-soft: #fff0ee;
+      --gray-soft: #f0f2f5;
+      --shadow: 0 1px 2px rgba(16,24,40,.04), 0 8px 24px rgba(16,24,40,.05);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .shell { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 42px 0 56px; }
+    .topbar { display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; margin-bottom: 26px; }
+    h1 { margin: 0; font-size: clamp(28px, 4vw, 40px); letter-spacing: -0.035em; line-height: 1.08; }
+    .sub { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+    .updated { color: var(--muted); font-size: 13px; background: var(--card); border: 1px solid var(--line); padding: 8px 11px; border-radius: 999px; white-space: nowrap; }
+
+    .stats { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin-bottom: 18px; }
+    .stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
+    .stat-label { color: var(--muted); font-size: 12px; font-weight: 650; text-transform: uppercase; letter-spacing: .06em; }
+    .stat-value { font-size: 29px; font-weight: 760; letter-spacing: -.035em; margin-top: 5px; }
+
+    .panel { background: var(--card); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); overflow: hidden; }
+    .tabs { padding: 8px; display: flex; gap: 6px; border-bottom: 1px solid var(--line); background: #fbfcfe; }
+    .tab { border: 0; background: transparent; color: var(--muted); font: inherit; font-weight: 700; padding: 10px 14px; border-radius: 11px; cursor: pointer; }
+    .tab.active { color: var(--accent); background: var(--accent-soft); }
+    .tab-count { margin-left: 6px; opacity: .75; }
+
+    .tools { display: grid; grid-template-columns: minmax(260px,1fr) 200px 200px; gap: 10px; padding: 14px; border-bottom: 1px solid var(--line); }
+    .control { position: relative; }
+    input, select { width: 100%; height: 42px; border: 1px solid #d8dee8; border-radius: 11px; background: #fff; color: var(--text); padding: 0 12px; font: inherit; font-size: 14px; outline: none; }
+    input:focus, select:focus { border-color: #8cacff; box-shadow: 0 0 0 3px rgba(36,87,214,.10); }
+
+    .list-head, .job-row { display: grid; grid-template-columns: minmax(280px, 2fr) minmax(190px,1.1fr) minmax(150px,.9fr) 125px 145px; gap: 16px; align-items: center; }
+    .list-head { padding: 11px 18px; font-size: 11px; color: var(--muted); font-weight: 750; text-transform: uppercase; letter-spacing: .055em; background: #fafbfc; border-bottom: 1px solid var(--line); }
+    .job-row { padding: 17px 18px; border-bottom: 1px solid var(--line); }
+    .job-row:last-child { border-bottom: 0; }
+    .job-row:hover { background: #fbfcff; }
+    .role { font-weight: 760; font-size: 14px; line-height: 1.4; }
+    .category { display: inline-block; margin-top: 6px; color: var(--muted); font-size: 11px; font-weight: 650; }
+    .org { font-size: 13px; font-weight: 680; line-height: 1.4; }
+    .location { color: var(--muted); font-size: 13px; line-height: 1.4; }
+    .date { font-size: 13px; font-weight: 650; }
+    .deadline-note { display: block; margin-top: 3px; font-size: 11px; color: var(--muted); }
+
+    .pill { display: inline-flex; align-items: center; width: fit-content; border-radius: 999px; padding: 6px 9px; font-size: 11px; font-weight: 750; white-space: nowrap; }
+    .pill.blue { color: #1e4db7; background: var(--accent-soft); }
+    .pill.green { color: var(--green); background: var(--green-soft); }
+    .pill.amber { color: var(--amber); background: var(--amber-soft); }
+    .pill.red { color: var(--red); background: var(--red-soft); }
+    .pill.gray { color: #5d6675; background: var(--gray-soft); }
+
+    .open-btn { display: inline-flex; justify-content: center; align-items: center; gap: 7px; height: 36px; padding: 0 12px; text-decoration: none; color: #fff; background: var(--accent); border-radius: 10px; font-size: 12px; font-weight: 750; }
+    .open-btn:hover { filter: brightness(.96); }
+    .open-btn svg { width: 13px; height: 13px; }
+
+    .empty { padding: 56px 20px; text-align: center; color: var(--muted); }
+    .footer-note { color: var(--muted); font-size: 12px; margin: 14px 2px 0; line-height: 1.5; }
+
+    @media (max-width: 880px) {
+      .stats { grid-template-columns: 1fr 1fr; }
+      .stats .stat:last-child { grid-column: span 2; }
+      .tools { grid-template-columns: 1fr 1fr; }
+      .tools .control:first-child { grid-column: span 2; }
+      .list-head { display: none; }
+      .job-row { grid-template-columns: 1fr auto; gap: 12px 18px; align-items: start; }
+      .job-row > div:nth-child(1) { grid-column: 1 / -1; }
+      .job-row > div:nth-child(2), .job-row > div:nth-child(3) { grid-column: 1; }
+      .job-row > div:nth-child(4), .job-row > div:nth-child(5) { grid-column: 2; grid-row: auto; }
+    }
+
+    @media (max-width: 560px) {
+      .shell { width: min(100% - 20px, 1180px); padding-top: 24px; }
+      .topbar { display: block; }
+      .updated { display: inline-block; margin-top: 14px; }
+      .stats { grid-template-columns: 1fr 1fr; }
+      .stat { padding: 14px; }
+      .stat-value { font-size: 24px; }
+      .tools { grid-template-columns: 1fr; }
+      .tools .control:first-child { grid-column: auto; }
+      .job-row { display: block; padding: 16px; }
+      .job-row > div { margin-top: 10px; }
+      .job-row > div:first-child { margin-top: 0; }
+      .open-btn { margin-top: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="topbar">
+      <div>
+        <h1>Academic Job Tracker</h1>
+        <p class="sub">Australia · Computer Science, AI, ML, Data, Cybersecurity & related academic roles</p>
+      </div>
+      <div class="updated">Updated 4 Sep 2026</div>
+    </div>
+
+    <section class="stats">
+      <div class="stat"><div class="stat-label">New opportunities</div><div class="stat-value" id="statNew">0</div></div>
+      <div class="stat"><div class="stat-label">Applications</div><div class="stat-value" id="statApplied">0</div></div>
+      <div class="stat"><div class="stat-label">Active applications</div><div class="stat-value" id="statActive">0</div></div>
+    </section>
+
+    <section class="panel">
+      <div class="tabs">
+        <button class="tab active" data-tab="new">New Opportunities <span class="tab-count" id="tabNewCount"></span></button>
+        <button class="tab" data-tab="applied">Applied Jobs <span class="tab-count" id="tabAppliedCount"></span></button>
+      </div>
+
+      <div class="tools">
+        <div class="control"><input id="search" type="search" placeholder="Search role, university or location…" /></div>
+        <div class="control"><select id="filter"><option value="all">All categories</option></select></div>
+        <div class="control"><select id="sort"><option value="deadline">Closing date</option><option value="university">University A–Z</option><option value="role">Role A–Z</option></select></div>
+      </div>
+
+      <div class="list-head" id="listHead">
+        <div>Position</div><div>University</div><div>Location</div><div>Closing</div><div>Status / Action</div>
+      </div>
+      <div id="jobs"></div>
+    </section>
+
+    <p class="footer-note">Already-applied roles are excluded from New Opportunities. Application statuses are shown from the Gmail-tracked applied-jobs list.</p>
+  </main>
+
+<script>
+const newJobs = [
+  {category:'Lecturer',title:'Lecturer/Senior Lecturer in Data Systems and Engineering',org:'The University of Queensland',location:'St Lucia, Brisbane QLD',closing:'2026-09-07',source:'University',url:'https://uq.wd3.myworkdayjobs.com/en-US/uqcareers/job/St-Lucia-Campus/Lecturer-Senior-Lecturer-in-Data-Systems-and-Engineering_R-67067-1',status:'New'},
+  {category:'Lecturer',title:'Lecturer in Artificial Intelligence',org:'Macquarie University',location:'North Ryde, Sydney NSW',closing:'2026-09-07',source:'University',url:'https://mq.wd3.myworkdayjobs.com/en-US/CareersatMQ/job/Lecturer-in-Artificial-Intelligence_R000024017-1',status:'New'},
+  {category:'Lecturer',title:'Lecturer/Senior Lecturer in Robotics and Mechatronic Engineering',org:'The University of Queensland',location:'St Lucia, Brisbane QLD',closing:'2026-09-07',source:'University',url:'https://uq.wd3.myworkdayjobs.com/broadbean_external/job/St-Lucia-Campus/Lecturer-Senior-Lecturer-in-Robotics-and-Mechatronic-Engineering_R-67009',status:'New'},
+  {category:'Postdoc / Research',title:'Postdoctoral Research Associate - Wireless Communications',org:'University of Sydney',location:'Camperdown, Sydney NSW',closing:'2026-09-08',source:'University',url:'https://usyd.wd105.myworkdayjobs.com/en-GB/USYD_EXTERNAL_CAREER_SITE/job/Postdoctoral-Research-Associate---Wireless-Communications_0148412-1',status:'New'},
+  {category:'Postdoc / Research',title:'Postdoctoral Research Fellow - Usable Privacy and Privacy-Preserving Learning',org:'The University of Queensland',location:'St Lucia, Brisbane QLD',closing:'2026-09-09',source:'University / LinkedIn',url:'https://au.linkedin.com/jobs/view/postdoctoral-research-fellow-usable-privacy-and-privacy-preserving-learning-at-the-university-of-queensland-4461563085',status:'New'},
+  {category:'Lecturer',title:'Senior Lecturer/Lecturer, Business Technology and Analytics',org:'Western Sydney University',location:'Parramatta, Sydney NSW',closing:'2026-09-13',source:'University',url:'https://careers.westernsydney.edu.au/job/senior-lecturer-lecturer-business-technology-and-analytics-in-parramatta-au-jid-518',status:'New'},
+  {category:'Lecturer',title:'Lecturer / Senior Lecturer - Machine Learning',org:'Queensland University of Technology (QUT)',location:'Gardens Point, Brisbane QLD',closing:'2026-09-15',source:'QUT',url:'https://www.qut.edu.au/about/careers',status:'New'},
+  {category:'Postdoc / Research',title:'Research Fellow, Computational Systems Modelling for Road Safety',org:'University of the Sunshine Coast (UniSC)',location:'Sippy Downs, Sunshine Coast QLD',closing:'2026-09-20',source:'University',url:'https://careers.usc.edu.au/jobs/research-fellow-computational-systems-modelling-for-road-safety-unisc-sunshine-coast-qld-australia',status:'New'},
+  {category:'Postdoc / Research',title:'Postdoctoral Fellow – Machine Learning Engineering',org:'Australian National University',location:'Canberra ACT',closing:'2026-09-27',source:'University',url:'https://jobs.anu.edu.au/jobs/postdoctoral-fellow-canberra-act-act-australia-e2e6e521-3369-4a4b-8061-d8541ae66c6c',status:'New'},
+  {category:'Postdoc / Research',title:'Postdoctoral Research Fellow in Computer Science',org:'The University of Queensland',location:'St Lucia, Brisbane QLD',closing:'2026-09-27',source:'University / LinkedIn',url:'https://uq.wd3.myworkdayjobs.com/en-GB/uqcareers/job/St-Lucia-Campus/Postdoctoral-Research-Fellow-in-Computer-Science_R-68456',status:'New'},
+  {category:'Postdoc / Research',title:'Postdoctoral Research Fellow in Power System Stability',org:'The University of Queensland',location:'St Lucia, Brisbane QLD',closing:'2026-09-30',source:'University / LinkedIn',url:'https://au.linkedin.com/jobs/view/postdoctoral-research-fellow-in-power-system-stability-at-the-university-of-queensland-4461564062',status:'New'},
+  {category:'Postdoc / Research',title:'Postdoctoral Fellow',org:'Macquarie University',location:'North Ryde, Sydney NSW',closing:'2026-10-16',source:'University',url:'https://mq.wd3.myworkdayjobs.com/en-US/CareersatMQ/job/Postdoctoral-Fellow_R000024286',status:'New'},
+  {category:'Lecturer',title:'Lecturer, Information Technology (IT)',org:'Charles Sturt University Sydney | Melbourne',location:'North Sydney, Sydney NSW',closing:null,source:'SEEK',url:'https://au.seek.com/lecturer-information-technology-jobs/in-All-Australia',status:'New'}
+];
+
+const appliedJobs = [
+  {title:'Lecturer in Cyber Security',org:'Adelaide University',location:'Adelaide, SA, Australia',closing:'2026-05-18',status:'Unsuccessful'},
+  {title:'Lecturer in Computing and Information Technology',org:'University of Newcastle',location:'Not stated',closing:'2026-07-28',status:'Application Submitted'},
+  {title:'Postdoctoral Research Fellow',org:'Adelaide University',location:'Adelaide CBD, SA, Australia',closing:'2026-08-10',status:'Unsuccessful'},
+  {title:'Research Associate in Statistical Modelling',org:'Macquarie University',location:'Wallumattagal Campus, North Ryde',closing:'2026-08-10',status:'Application Received'},
+  {title:'Lecturer/Senior Lecturer in Applied Artificial Intelligence',org:'The University of Queensland',location:'St Lucia Campus, Brisbane QLD',closing:'2026-08-13',status:'Under Review'},
+  {title:'Postdoctoral Fellow – Responsible Statistical Learning',org:'Australian National University',location:'Acton Campus, Canberra ACT',closing:'2026-08-17',status:'Application Received'},
+  {title:'Lecturer, Graduate Research',org:'The University of Notre Dame Australia',location:'Sydney or Fremantle Campus',closing:'2026-08-27',status:'Under Review'},
+  {title:'Postdoctoral Research Fellow in Data Science for Smart Horticulture (ARC TC-SaSH)',org:'Western Sydney University',location:'Hawkesbury Campus, Richmond NSW',closing:'2026-08-31',status:'Application Received'},
+  {title:'Postdoctoral Research Fellow (A) – AI in Computational Biology',org:'Adelaide University',location:'Adelaide CBD, SA, Australia',closing:'2026-08-31',status:'Application Received'},
+  {title:'Research Fellow - Federated & Multimodal Learning',org:'Monash University',location:'Clayton campus',closing:'2026-08-31',status:'Application Received'},
+  {title:'Research Fellow',org:'Australian National University',location:'Canberra / ACT, ACT, Australia',closing:'2026-08-31',status:'Application Received'},
+  {title:'Research Fellow – AI/Machine Learning in Pharmaceutical Data',org:'Monash University',location:'Clayton campus',closing:'2026-09-01',status:'Application Received'},
+  {title:'Postdoctoral Fellow – Wheat Blast Preparedness',org:'Australian National University',location:'Canberra / ACT, ACT, Australia',closing:'2026-09-02',status:'Application Received'},
+  {title:'Postdoctoral Research Associate in Spatial Omics and Statistical Data Science',org:'University of Sydney',location:'Camperdown Campus',closing:'2026-09-03',status:'Application Submitted'},
+  {title:'Research Associate - UNSW Face Research Lab',org:'UNSW',location:'Sydney, NSW, Australia',closing:'2026-09-03',status:'Application Received'},
+  {title:'Lecturer or Senior Lecturer in Digital Business',org:'University of the Sunshine Coast (UniSC)',location:'Sippy Downs, QLD, Australia',closing:'2026-09-13',status:'Application Received'},
+  {title:'Lecturer',org:'University of Wollongong',location:'Not stated',closing:null,status:'Unsuccessful'},
+  {title:'Associate Lecturer/Lecturer – AI, Machine Learning & Data Science',org:'Curtin University',location:'Perth, WA, Australia',closing:null,status:'On Hold'},
+  {title:'Lecturer Computer Science and IT',org:'SAE University College',location:'Perth, WA, Australia',closing:null,status:'Under Review'},
+  {title:'Lecturer - Bachelor of ICT (Perth)',org:'Stanley College',location:'West Perth, WA, Australia',closing:null,status:'In Progress'},
+  {title:'Research Fellow',org:'University of Sydney',location:'Not stated',closing:null,status:'Application Submitted'},
+  {title:'Research Associate',org:'UNSW',location:'Not stated',closing:null,status:'Application Received'},
+  {title:'Postdoctoral Research Associate (524145)',org:'The University of Western Australia',location:'Not stated',closing:null,status:'Application Received'},
+  {title:'Research Fellow - Additive Manufacturing',org:'Swinburne University of Technology',location:'Not stated',closing:null,status:'Under Review'},
+  {title:'Bioinformatics Analyst - Level A',org:'Adelaide University',location:'Adelaide CBD, SA, Australia',closing:'2026-09-13',status:'Application Received'}
+];
+
+let currentTab = 'new';
+const jobsEl = document.getElementById('jobs');
+const searchEl = document.getElementById('search');
+const filterEl = document.getElementById('filter');
+const sortEl = document.getElementById('sort');
+
+const esc = s => String(s ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+const prettyDate = value => value ? new Date(value + 'T00:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}) : 'Not stated';
+
+function daysNote(value) {
+  if (!value) return '';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(value + 'T00:00:00');
+  const days = Math.round((d - today)/86400000);
+  if (days < 0) return 'Closed';
+  if (days === 0) return 'Closes today';
+  if (days === 1) return '1 day left';
+  return days + ' days left';
+}
+
+function statusClass(status) {
+  const s = status.toLowerCase();
+  if (s.includes('unsuccessful')) return 'red';
+  if (s.includes('interview') || s.includes('shortlist') || s.includes('offer')) return 'green';
+  if (s.includes('review') || s.includes('progress')) return 'amber';
+  if (s.includes('hold') || s.includes('withdraw')) return 'gray';
+  return 'blue';
+}
+
+function currentData() {
+  if (currentTab === 'new') return newJobs.map(j => ({...j, category:j.category || 'Other'}));
+  return appliedJobs.map(j => ({...j, category: j.title.toLowerCase().includes('lecturer') ? 'Lecturer' : 'Postdoc / Research'}));
+}
+
+function populateFilter() {
+  const values = [...new Set(currentData().map(j => currentTab === 'new' ? j.category : j.status))].sort();
+  filterEl.innerHTML = `<option value="all">${currentTab === 'new' ? 'All categories' : 'All statuses'}</option>` + values.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+}
+
+function render() {
+  const q = searchEl.value.trim().toLowerCase();
+  const f = filterEl.value;
+  let rows = currentData().filter(j => {
+    const hay = `${j.title} ${j.org} ${j.location}`.toLowerCase();
+    const filterMatch = f === 'all' || (currentTab === 'new' ? j.category === f : j.status === f);
+    return hay.includes(q) && filterMatch;
+  });
+
+  const sort = sortEl.value;
+  rows.sort((a,b) => {
+    if (sort === 'university') return a.org.localeCompare(b.org);
+    if (sort === 'role') return a.title.localeCompare(b.title);
+    const ax = a.closing ? new Date(a.closing).getTime() : Infinity;
+    const bx = b.closing ? new Date(b.closing).getTime() : Infinity;
+    return ax - bx;
+  });
+
+  if (!rows.length) {
+    jobsEl.innerHTML = `<div class="empty">No matching jobs.</div>`;
+    return;
+  }
+
+  jobsEl.innerHTML = rows.map(j => {
+    const action = currentTab === 'new'
+      ? `<a class="open-btn" href="${esc(j.url)}" target="_blank" rel="noopener">Open job <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3h7v7"/><path d="M10 14L21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg></a>`
+      : `<span class="pill ${statusClass(j.status)}">${esc(j.status)}</span>`;
+
+    const note = daysNote(j.closing);
+    return `<div class="job-row">
+      <div><div class="role">${esc(j.title)}</div><span class="category">${esc(j.category)}</span></div>
+      <div class="org">${esc(j.org)}</div>
+      <div class="location">${esc(j.location)}</div>
+      <div class="date">${prettyDate(j.closing)}${note ? `<span class="deadline-note">${esc(note)}</span>` : ''}</div>
+      <div>${action}</div>
+    </div>`;
+  }).join('');
+}
+
+function updateStats() {
+  const active = appliedJobs.filter(j => !['Unsuccessful','Withdrawn'].includes(j.status)).length;
+  document.getElementById('statNew').textContent = newJobs.length;
+  document.getElementById('statApplied').textContent = appliedJobs.length;
+  document.getElementById('statActive').textContent = active;
+  document.getElementById('tabNewCount').textContent = newJobs.length;
+  document.getElementById('tabAppliedCount').textContent = appliedJobs.length;
+}
+
+document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  btn.classList.add('active');
+  currentTab = btn.dataset.tab;
+  searchEl.value = '';
+  populateFilter();
+  render();
+}));
+
+searchEl.addEventListener('input', render);
+filterEl.addEventListener('change', render);
+sortEl.addEventListener('change', render);
+
+updateStats();
+populateFilter();
+render();
+</script>
+</body>
+</html>
